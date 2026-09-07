@@ -220,6 +220,11 @@
     transition:background .15s;
   }
   .copy-btn:active{background:var(--egg-deep);}
+  .copy-btn:disabled{
+    background:var(--neutral);
+    color:#fff;
+    cursor:not-allowed;
+  }
   .copy-note{
     font-size:12px;
     color:var(--ink-soft);
@@ -288,7 +293,7 @@
       </span>
     </div>
     <button class="copy-btn" id="copyBtn">LINE送信用テキストをコピー</button>
-    <p class="copy-note">未入力の項目はテキストに含まれません</p>
+    <p class="copy-note" id="copyNote">未入力の項目はテキストに含まれません</p>
     <textarea class="output hidden" id="outputArea" readonly></textarea>
   </section>
 
@@ -526,12 +531,43 @@ function getAllStatuses(){
   return statuses;
 }
 
+function getMissingItemNames(){
+  const missing = [];
+  numericItems.forEach(item=>{
+    const raw = state.numeric[item.key];
+    if(raw === undefined || raw === '' || isNaN(parseFloat(raw))) missing.push(item.name);
+  });
+  boolItems.forEach(item=>{
+    if(!state.bool[item.key]) missing.push(item.name);
+  });
+  if(state.wasteHasToday === null || state.wasteHasToday === undefined){
+    missing.push(wasteItemName);
+  } else if(state.wasteHasToday === 'yes' && !state.wasteDone){
+    missing.push(wasteItemName);
+  }
+  return missing;
+}
+
+function updateCopyState(){
+  const missing = getMissingItemNames();
+  const copyBtn = document.getElementById('copyBtn');
+  const copyNote = document.getElementById('copyNote');
+  if(missing.length === 0){
+    copyBtn.disabled = false;
+    copyNote.textContent = '全項目の入力・チェックが完了しています';
+  } else {
+    copyBtn.disabled = true;
+    copyNote.textContent = `あと${missing.length}項目：${missing.join('、')}`;
+  }
+}
+
 function renderSummary(){
   const statuses = getAllStatuses();
   const ok = statuses.filter(s=>s==='ok').length;
   const ng = statuses.filter(s=>s==='ng').length;
   document.getElementById('okCount').textContent = `⭕ ${ok}`;
   document.getElementById('ngCount').textContent = `❌ ${ng}`;
+  updateCopyState();
 }
 
 function buildOutputText(){
@@ -574,6 +610,7 @@ document.getElementById('weatherToggle').addEventListener('click', e=>{
 });
 
 document.getElementById('copyBtn').addEventListener('click', ()=>{
+  if(getMissingItemNames().length > 0) return;
   const text = buildOutputText();
   const area = document.getElementById('outputArea');
   area.value = text;
