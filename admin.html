@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>出汁と卵 | 仕込みチェック表 管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #E7DEC7;
+    --paper: #FBF6E9;
+    --paper-edge: #DED0AC;
+    --ink: #33281B;
+    --ink-soft: #786451;
+    --dashi: #8C5A2B;
+    --egg: #F0A400;
+    --egg-deep: #C97F00;
+    --stamp-ok: #B2382A;
+    --stamp-ng: #33281B;
+    --danger: #A13B2E;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(255,255,255,0.35), transparent 40%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:28px 14px 80px;
+  }
+  .sheet{max-width:520px;margin:0 auto;}
+  header{
+    text-align:left;
+    margin-bottom:22px;
+    padding-bottom:16px;
+    border-bottom:2px solid var(--dashi);
+  }
+  .eyebrow{font-size:13px;color:var(--dashi);margin:0 0 4px;}
+  h1{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:24px;
+    margin:0 0 6px;
+    line-height:1.35;
+  }
+  .sub{font-size:13px;color:var(--ink-soft);margin:0;}
+
+  section{margin-bottom:28px;}
+  .section-title{
+    font-family:'Shippori Mincho', serif;
+    font-size:16px;
+    font-weight:700;
+    margin:0 0 4px;
+    color:var(--dashi);
+  }
+  .section-help{font-size:12px;color:var(--ink-soft);margin:0 0 10px;}
+
+  .ticket{
+    background:var(--paper);
+    border:1px solid var(--paper-edge);
+    border-radius:2px;
+  }
+  .row{
+    padding:14px 14px;
+    border-bottom:1px dashed var(--paper-edge);
+  }
+  .row:last-child{border-bottom:none;}
+
+  .field-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+  }
+  .field label{font-size:11px;color:var(--ink-soft);}
+  .field input[type="text"], .field input[type="number"]{
+    font-family:inherit;
+    font-size:14px;
+    padding:9px 10px;
+    border:1.5px solid var(--paper-edge);
+    border-radius:3px;
+    background:#fff;
+    color:var(--ink);
+    width:100%;
+  }
+  .field input:focus{outline:none;border-color:var(--egg-deep);}
+  .field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .field-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+  .rain-line{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:2px;
+  }
+  .rain-line label{font-size:12px;color:var(--ink-soft);display:flex;align-items:center;gap:6px;}
+  .rain-line input[type="number"]{width:80px;}
+
+  .row-actions{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:8px;
+  }
+  .delete-btn{
+    font-family:inherit;
+    font-size:12px;
+    font-weight:700;
+    padding:7px 12px;
+    border-radius:3px;
+    border:1.5px solid var(--danger);
+    background:#fff;
+    color:var(--danger);
+    cursor:pointer;
+  }
+  .delete-btn:active{background:rgba(161,59,46,0.08);}
+
+  .add-btn{
+    width:100%;
+    margin-top:10px;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:700;
+    padding:12px;
+    border-radius:3px;
+    border:1.5px dashed var(--dashi);
+    background:transparent;
+    color:var(--dashi);
+    cursor:pointer;
+  }
+  .add-btn:active{background:rgba(140,90,43,0.06);}
+
+  .waste-field{padding:14px;}
+
+  .save-bar{
+    position:sticky;
+    bottom:14px;
+    display:flex;
+    gap:10px;
+    margin-top:30px;
+  }
+  .save-btn{
+    flex:1;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:15px;
+    font-weight:700;
+    padding:15px;
+    border-radius:3px;
+    border:none;
+    background:var(--egg);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .save-btn:active{background:var(--egg-deep);}
+  .reset-btn{
+    font-family:inherit;
+    font-size:13px;
+    font-weight:700;
+    padding:15px 14px;
+    border-radius:3px;
+    border:1.5px solid var(--paper-edge);
+    background:var(--paper);
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .status-msg{
+    font-size:12px;
+    text-align:center;
+    margin-top:10px;
+    min-height:16px;
+    color:var(--dashi);
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <p class="eyebrow">出汁と卵 - 仕込みチェック表 設定</p>
+    <h1>項目・初期値の管理</h1>
+    <p class="sub">ここで編集して保存すると、仕込みチェック表アプリに反映されます。</p>
+  </header>
+
+  <section>
+    <p class="section-title">仕込み量の項目</p>
+    <p class="section-help">晴れの平日／晴れの土日祝／雨の平日／雨の土日祝、4つの条件ごとに必要量を設定します。</p>
+    <div class="ticket" id="numericRows"></div>
+    <button class="add-btn" id="addNumericBtn">＋ 仕込み項目を追加</button>
+  </section>
+
+  <section>
+    <p class="section-title">確認事項（済／未タイプ）</p>
+    <p class="section-help">量ではなく「送れたか」を済/未で確認する項目。</p>
+    <div class="ticket" id="boolRows"></div>
+    <button class="add-btn" id="addBoolBtn">＋ 確認事項を追加</button>
+  </section>
+
+  <section>
+    <p class="section-title">廃棄チェック項目の名称</p>
+    <div class="ticket">
+      <div class="waste-field field">
+        <label for="wasteNameInput">表示名</label>
+        <input type="text" id="wasteNameInput" value="廃棄チェック">
+      </div>
+    </div>
+  </section>
+
+  <div class="save-bar">
+    <button class="save-btn" id="saveBtn">保存する</button>
+    <button class="reset-btn" id="resetBtn">初期状態に戻す</button>
+  </div>
+  <p class="status-msg" id="statusMsg"></p>
+
+</div>
+
+<script>
+const DEFAULT_CONFIG = {
+  numericItems: [
+    { key:'ekiran',  name:'液卵',        unit:'ポット', sunnyWeekday:1.0, sunnyWeekend:4.0, rainWeekday:1.0, rainWeekend:4.0 },
+    { key:'dashi',   name:'出汁',        unit:'ポット', sunnyWeekday:0.5, sunnyWeekend:1.0, rainWeekday:0.5, rainWeekend:1.0 },
+    { key:'karashi', name:'からしマヨ',   unit:'缶',    sunnyWeekday:1,   sunnyWeekend:1,   rainWeekday:1,   rainWeekend:1 },
+    { key:'gyu',     name:'牛しぐれ',     unit:'タッパ', sunnyWeekday:0.5, sunnyWeekend:1.0, rainWeekday:0.5, rainWeekend:1.0 },
+    { key:'salmon',  name:'サーモン解凍', unit:'タッパ', sunnyWeekday:0.5, sunnyWeekend:1.0, rainWeekday:0.5, rainWeekend:1.0 },
+    { key:'mentai',  name:'明太子解凍',   unit:'タッパ', sunnyWeekday:0.5, sunnyWeekend:0.5, rainWeekday:0.5, rainWeekend:0.5 },
+    { key:'unagi',   name:'うなぎ解凍',   unit:'タッパ', sunnyWeekday:0.5, sunnyWeekend:0.5, rainWeekday:0.5, rainWeekend:0.5 },
+    { key:'drink',   name:'ドリンク(各種・冷蔵庫内)', unit:'本', sunnyWeekday:3, sunnyWeekend:3, rainWeekday:3, rainWeekend:3 },
+    { key:'pan',     name:'食パン解凍',   unit:'人前',  sunnyWeekday:20,  sunnyWeekend:50,  rainWeekday:10,  rainWeekend:10 },
+  ],
+  boolItems: [
+    { key:'hacchu', name:'発注・掃除写真' },
+    { key:'tenki',  name:'天気チェック' },
+  ],
+  wasteItem: { name:'廃棄チェック' }
+};
+
+// ここにGoogle Apps ScriptのウェブアプリURL（末尾が/execのURL）を貼り付けてください。
+// index.html側にも同じURLを設定してください。
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbx4h2CYCha-VND-l0JQeeucMDs-a11K2RJCXnR6ekSX4KNKRTluvgCRQ0fKyZ17jYBQ/exec';
+
+let config = null;
+
+function newKey(prefix){
+  return prefix + '_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+}
+
+function cloneDefault(){
+  return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+}
+
+function normalizeNumericItem(cfg){
+  // 旧スキーマ(weekday/weekend/useRain/rainValue)からの移行に対応
+  if(cfg.sunnyWeekday !== undefined) return cfg;
+  const sw = cfg.weekday, se = cfg.weekend;
+  const rw = cfg.useRain ? cfg.rainValue : cfg.weekday;
+  const re = cfg.useRain ? cfg.rainValue : cfg.weekend;
+  return { key: cfg.key, name: cfg.name, unit: cfg.unit, sunnyWeekday: sw, sunnyWeekend: se, rainWeekday: rw, rainWeekend: re };
+}
+
+async function loadConfig(){
+  if(GAS_URL && GAS_URL.indexOf('PASTE_') !== 0){
+    try{
+      const res = await fetch(GAS_URL, { method:'GET' });
+      const text = await res.text();
+      if(text){
+        const parsed = JSON.parse(text);
+        if(parsed && parsed.numericItems){
+          config = parsed;
+          config.numericItems = config.numericItems.map(normalizeNumericItem);
+          return;
+        }
+      }
+    }catch(err){
+      // 取得失敗時は既定値にフォールバック
+    }
+  }
+  config = cloneDefault();
+}
+
+function renderNumeric(){
+  const wrap = document.getElementById('numericRows');
+  wrap.innerHTML = '';
+  config.numericItems.forEach((item, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <div class="field-grid">
+        <div class="field-row2">
+          <div class="field">
+            <label>項目名</label>
+            <input type="text" data-idx="${idx}" data-field="name" value="${item.name}">
+          </div>
+          <div class="field">
+            <label>単位</label>
+            <input type="text" data-idx="${idx}" data-field="unit" value="${item.unit}">
+          </div>
+        </div>
+        <div class="field-row2">
+          <div class="field">
+            <label>晴れ・平日</label>
+            <input type="number" step="0.1" min="0" data-idx="${idx}" data-field="sunnyWeekday" value="${item.sunnyWeekday}">
+          </div>
+          <div class="field">
+            <label>晴れ・土日祝</label>
+            <input type="number" step="0.1" min="0" data-idx="${idx}" data-field="sunnyWeekend" value="${item.sunnyWeekend}">
+          </div>
+        </div>
+        <div class="field-row2">
+          <div class="field">
+            <label>雨・平日</label>
+            <input type="number" step="0.1" min="0" data-idx="${idx}" data-field="rainWeekday" value="${item.rainWeekday}">
+          </div>
+          <div class="field">
+            <label>雨・土日祝</label>
+            <input type="number" step="0.1" min="0" data-idx="${idx}" data-field="rainWeekend" value="${item.rainWeekend}">
+          </div>
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="delete-btn" data-idx="${idx}" data-action="delete-numeric">削除</button>
+      </div>
+    `;
+    wrap.appendChild(row);
+  });
+
+  wrap.querySelectorAll('input[data-field]').forEach(input=>{
+    input.addEventListener('input', e=>{
+      const idx = parseInt(e.target.dataset.idx, 10);
+      const field = e.target.dataset.field;
+      const item = config.numericItems[idx];
+      if(field === 'name' || field === 'unit'){
+        item[field] = e.target.value;
+      } else {
+        item[field] = parseFloat(e.target.value) || 0;
+      }
+    });
+  });
+
+  wrap.querySelectorAll('[data-action="delete-numeric"]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const idx = parseInt(e.target.dataset.idx, 10);
+      config.numericItems.splice(idx, 1);
+      renderNumeric();
+    });
+  });
+}
+
+function renderBool(){
+  const wrap = document.getElementById('boolRows');
+  wrap.innerHTML = '';
+  config.boolItems.forEach((item, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <div class="field">
+        <label>項目名</label>
+        <input type="text" data-idx="${idx}" data-field="name" value="${item.name}">
+      </div>
+      <div class="row-actions">
+        <button class="delete-btn" data-idx="${idx}" data-action="delete-bool">削除</button>
+      </div>
+    `;
+    wrap.appendChild(row);
+  });
+
+  wrap.querySelectorAll('input[data-field="name"]').forEach(input=>{
+    input.addEventListener('input', e=>{
+      const idx = parseInt(e.target.dataset.idx, 10);
+      config.boolItems[idx].name = e.target.value;
+    });
+  });
+  wrap.querySelectorAll('[data-action="delete-bool"]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const idx = parseInt(e.target.dataset.idx, 10);
+      config.boolItems.splice(idx, 1);
+      renderBool();
+    });
+  });
+}
+
+document.getElementById('addNumericBtn').addEventListener('click', ()=>{
+  config.numericItems.push({
+    key: newKey('item'), name:'新しい項目', unit:'個', sunnyWeekday:0, sunnyWeekend:0, rainWeekday:0, rainWeekend:0
+  });
+  renderNumeric();
+});
+
+document.getElementById('addBoolBtn').addEventListener('click', ()=>{
+  config.boolItems.push({ key: newKey('bool'), name:'新しい確認事項' });
+  renderBool();
+});
+
+document.getElementById('wasteNameInput').addEventListener('input', e=>{
+  config.wasteItem.name = e.target.value;
+});
+
+document.getElementById('saveBtn').addEventListener('click', async ()=>{
+  const statusEl = document.getElementById('statusMsg');
+  if(!GAS_URL || GAS_URL.indexOf('PASTE_') === 0){
+    statusEl.textContent = 'GAS_URL が未設定です。README.mdの手順でウェブアプリを公開し、URLを貼り付けてください。';
+    return;
+  }
+  statusEl.textContent = '保存中…';
+  try{
+    // text/plain で送るとブラウザのプリフライト(OPTIONS)が発生せず、GAS側で安定して受け取れます。
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(config)
+    });
+    const result = await res.json();
+    if(result && result.ok){
+      statusEl.textContent = '保存しました。チェック表アプリに反映されます。';
+    } else {
+      statusEl.textContent = '保存に失敗しました。もう一度お試しください。';
+    }
+  }catch(err){
+    statusEl.textContent = '保存に失敗しました（通信エラー）。GAS_URLの設定を確認してください。';
+  }
+  setTimeout(()=>{ statusEl.textContent = ''; }, 5000);
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(!confirm('すべての項目を初期状態に戻します。よろしいですか？')) return;
+  config = cloneDefault();
+  document.getElementById('wasteNameInput').value = config.wasteItem.name;
+  renderNumeric();
+  renderBool();
+});
+
+(async function init(){
+  await loadConfig();
+  document.getElementById('wasteNameInput').value = config.wasteItem.name;
+  renderNumeric();
+  renderBool();
+})();
+</script>
+</body>
+</html>

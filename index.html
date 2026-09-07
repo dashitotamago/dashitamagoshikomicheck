@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>出汁と卵 | 仕込みチェック表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #E7DEC7;
+    --paper: #FBF6E9;
+    --paper-edge: #DED0AC;
+    --ink: #33281B;
+    --ink-soft: #786451;
+    --dashi: #8C5A2B;
+    --egg: #F0A400;
+    --egg-deep: #C97F00;
+    --stamp-ok: #B2382A;
+    --stamp-ng: #33281B;
+    --neutral: #B7A98C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 8%, rgba(255,255,255,0.35), transparent 40%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:28px 14px 60px;
+  }
+  .sheet{
+    max-width:440px;
+    margin:0 auto;
+  }
+  header{
+    text-align:left;
+    margin-bottom:22px;
+    padding-bottom:16px;
+    border-bottom:2px solid var(--dashi);
+  }
+  .eyebrow{
+    font-size:13px;
+    color:var(--dashi);
+    letter-spacing:0.02em;
+    margin:0 0 4px;
+  }
+  h1{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:28px;
+    margin:0 0 6px;
+    line-height:1.3;
+  }
+  .sub{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0;
+  }
+
+  section{margin-bottom:26px;}
+  .section-title{
+    font-family:'Shippori Mincho', serif;
+    font-size:16px;
+    font-weight:700;
+    margin:0 0 10px;
+    color:var(--dashi);
+  }
+
+  .toggle-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .toggle-btn{
+    font-family:inherit;
+    font-size:15px;
+    font-weight:700;
+    padding:14px 8px;
+    border-radius:3px;
+    border:2px solid var(--paper-edge);
+    background:var(--paper);
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .toggle-btn.active{
+    border-color:var(--egg-deep);
+    background:#FFF3D9;
+    color:var(--ink);
+  }
+  .toggle-btn:active{transform:scale(0.98);}
+
+  .ticket{
+    background:var(--paper);
+    border:1px solid var(--paper-edge);
+    border-radius:2px;
+    box-shadow:0 2px 0 rgba(51,40,27,0.05);
+  }
+  .item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:16px 16px;
+    border-bottom:1px dashed var(--paper-edge);
+  }
+  .item:last-child{border-bottom:none;}
+  .item-main{flex:1;min-width:0;}
+  .item-name{
+    font-size:15px;
+    font-weight:700;
+    margin:0 0 3px;
+  }
+  .item-req{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:0;
+  }
+  .item-input-wrap{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-shrink:0;
+  }
+  .item-input{
+    width:64px;
+    font-family:inherit;
+    font-size:16px;
+    text-align:center;
+    padding:9px 4px;
+    border:1.5px solid var(--paper-edge);
+    border-radius:3px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .item-input:focus{outline:none;border-color:var(--egg-deep);}
+  .item-unit{font-size:12px;color:var(--ink-soft);width:34px;}
+
+  .stamp{
+    width:46px;
+    height:46px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    font-family:'Shippori Mincho', serif;
+    font-weight:800;
+    font-size:13px;
+    transform:rotate(-9deg);
+    user-select:none;
+  }
+  .stamp.pending{
+    border:2px dashed var(--neutral);
+    color:var(--neutral);
+    background:transparent;
+  }
+  .stamp.ok{
+    border:2.5px solid var(--stamp-ok);
+    color:var(--stamp-ok);
+    background:rgba(178,56,42,0.06);
+  }
+  .stamp.ng{
+    border:2.5px solid var(--stamp-ng);
+    color:var(--stamp-ng);
+    background:rgba(51,40,27,0.05);
+  }
+
+  .bool-toggle{
+    display:flex;
+    gap:6px;
+    flex-shrink:0;
+  }
+  .bool-btn{
+    font-family:inherit;
+    font-size:12px;
+    font-weight:700;
+    padding:9px 10px;
+    border-radius:3px;
+    border:1.5px solid var(--paper-edge);
+    background:#fff;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .bool-btn.active-ok{border-color:var(--stamp-ok);color:var(--stamp-ok);background:rgba(178,56,42,0.06);}
+  .bool-btn.active-ng{border-color:var(--stamp-ng);color:var(--stamp-ng);background:rgba(51,40,27,0.05);}
+
+  .waste-block{padding:16px;}
+  .waste-block .item-name{margin-bottom:10px;}
+
+  .summary{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--ink);
+    color:var(--paper);
+    padding:16px 18px;
+    border-radius:3px;
+    font-family:'Shippori Mincho', serif;
+  }
+  .summary .count{font-size:15px;font-weight:700;}
+  .summary .count.ng-count{color:#F0B0A6;}
+  .summary .count.ok-count{color:#F4C769;}
+
+  .copy-btn{
+    width:100%;
+    margin-top:14px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:15px;
+    font-weight:700;
+    padding:15px;
+    border-radius:3px;
+    border:none;
+    background:var(--egg);
+    color:var(--ink);
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .copy-btn:active{background:var(--egg-deep);}
+  .copy-note{
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:center;
+    margin-top:8px;
+  }
+
+  textarea.output{
+    width:100%;
+    margin-top:12px;
+    min-height:180px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:13px;
+    line-height:1.6;
+    padding:12px;
+    border:1.5px solid var(--paper-edge);
+    border-radius:3px;
+    background:var(--paper);
+    color:var(--ink);
+    resize:vertical;
+  }
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <p class="eyebrow">出汁と卵 - 厨房仕込み確認</p>
+    <h1>仕込みチェック表</h1>
+    <p class="sub">14時以降に入力・送信。条件量を満タンで超えている場合のみ⭕。</p>
+  </header>
+
+  <section>
+    <p class="section-title">明日の条件を選ぶ</p>
+    <div class="toggle-row" id="dayToggle">
+      <button class="toggle-btn active" data-day="平日">平日</button>
+      <button class="toggle-btn" data-day="休日">土日祝</button>
+    </div>
+    <div class="toggle-row" id="weatherToggle">
+      <button class="toggle-btn active" data-weather="晴れ">晴れ</button>
+      <button class="toggle-btn" data-weather="雨">雨</button>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-title">仕込み量</p>
+    <div class="ticket" id="numericList"></div>
+  </section>
+
+  <section>
+    <p class="section-title">確認事項</p>
+    <div class="ticket" id="boolList"></div>
+    <div class="ticket" style="margin-top:12px;">
+      <div class="waste-block" id="wasteBlock"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="summary">
+      <span>結果</span>
+      <span>
+        <span class="count ok-count" id="okCount">⭕ 0</span>
+        &nbsp;&nbsp;
+        <span class="count ng-count" id="ngCount">❌ 0</span>
+      </span>
+    </div>
+    <button class="copy-btn" id="copyBtn">LINE送信用テキストをコピー</button>
+    <p class="copy-note">未入力の項目はテキストに含まれません</p>
+    <textarea class="output hidden" id="outputArea" readonly></textarea>
+  </section>
+
+</div>
+
+<script>
+const state = {
+  day: '平日',
+  weather: '晴れ',
+  numeric: {},   // key -> actual string
+  bool: {},      // key -> 'ok' | 'ng' | undefined
+  wasteHasToday: null, // 'yes' | 'no' | null
+  wasteDone: null      // 'ok' | 'ng' | null
+};
+
+// ここにGoogle Apps ScriptのウェブアプリURL（末尾が/execのURL）を貼り付けてください。
+// 未設定の間は既定値（DEFAULT_CONFIG）で動作します。
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbx4h2CYCha-VND-l0JQeeucMDs-a11K2RJCXnR6ekSX4KNKRTluvgCRQ0fKyZ17jYBQ/exec';
+
+let numericItems = [];
+let boolItems = [];
+let wasteItemName = '廃棄チェック';
+
+const DEFAULT_CONFIG = {
+  numericItems: [
+    { key:'ekiran',  name:'液卵',        unit:'ポット', sunnyWeekday:1.0, sunnyWeekend:4.0, rainWeekday:1.0, rainWeekend:4.0 },
+    { key:'dashi',   name:'出汁',        unit:'ポット', sunnyWeekday:0.5, sunnyWeekend:1.0, rainWeekday:0.5, rainWeekend:1.0 },
+    { key:'karashi', name:'からしマヨ',   unit:'缶',    sunnyWeekday:1,   sunnyWeekend:1,   rainWeekday:1,   rainWeekend:1 },
+    { key:'gyu',     name:'牛しぐれ',     unit:'タッパ', sunnyWeekday:0.5, sunnyWeekend:1.0, rainWeekday:0.5, rainWeekend:1.0 },
+    { key:'salmon',  name:'サーモン解凍', unit:'タッパ', sunnyWeekday:0.5, sunnyWeekend:1.0, rainWeekday:0.5, rainWeekend:1.0 },
+    { key:'mentai',  name:'明太子解凍',   unit:'タッパ', sunnyWeekday:0.5, sunnyWeekend:0.5, rainWeekday:0.5, rainWeekend:0.5 },
+    { key:'unagi',   name:'うなぎ解凍',   unit:'タッパ', sunnyWeekday:0.5, sunnyWeekend:0.5, rainWeekday:0.5, rainWeekend:0.5 },
+    { key:'drink',   name:'ドリンク(各種・冷蔵庫内)', unit:'本', sunnyWeekday:3, sunnyWeekend:3, rainWeekday:3, rainWeekend:3 },
+    { key:'pan',     name:'食パン解凍',   unit:'人前',  sunnyWeekday:20,  sunnyWeekend:50,  rainWeekday:10,  rainWeekend:10 },
+  ],
+  boolItems: [
+    { key:'hacchu', name:'発注・掃除写真' },
+    { key:'tenki',  name:'天気チェック' },
+  ],
+  wasteItem: { name:'廃棄チェック' }
+};
+
+function normalizeNumericItem(cfg){
+  // 旧スキーマ(weekday/weekend/useRain/rainValue)からの移行に対応
+  if(cfg.sunnyWeekday !== undefined) return cfg;
+  const sw = cfg.weekday, se = cfg.weekend;
+  const rw = cfg.useRain ? cfg.rainValue : cfg.weekday;
+  const re = cfg.useRain ? cfg.rainValue : cfg.weekend;
+  return { key: cfg.key, name: cfg.name, unit: cfg.unit, sunnyWeekday: sw, sunnyWeekend: se, rainWeekday: rw, rainWeekend: re };
+}
+
+async function loadConfig(){
+  let config = null;
+  if(GAS_URL && GAS_URL.indexOf('PASTE_') !== 0){
+    try{
+      const res = await fetch(GAS_URL, { method:'GET' });
+      const text = await res.text();
+      if(text){
+        const parsed = JSON.parse(text);
+        if(parsed && parsed.numericItems) config = parsed;
+      }
+    }catch(err){
+      config = null;
+    }
+  }
+  if(!config || !config.numericItems){ config = DEFAULT_CONFIG; }
+
+  numericItems = config.numericItems.map(raw => {
+    const cfg = normalizeNumericItem(raw);
+    return {
+      key: cfg.key, name: cfg.name, unit: cfg.unit,
+      req: (d,w) => {
+        if(w === '雨') return d === '平日' ? cfg.rainWeekday : cfg.rainWeekend;
+        return d === '平日' ? cfg.sunnyWeekday : cfg.sunnyWeekend;
+      }
+    };
+  });
+  boolItems = (config.boolItems || []).map(cfg => ({ key: cfg.key, name: cfg.name }));
+  wasteItemName = config.wasteItem ? config.wasteItem.name : '廃棄チェック';
+}
+
+function fmt(n){
+  return (Math.round(n*10)/10).toString();
+}
+
+function renderToggles(){
+  document.querySelectorAll('#dayToggle .toggle-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.day === state.day);
+  });
+  document.querySelectorAll('#weatherToggle .toggle-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.weather === state.weather);
+  });
+}
+
+function renderNumeric(){
+  const list = document.getElementById('numericList');
+  list.innerHTML = '';
+  numericItems.forEach(item=>{
+    const required = item.req(state.day, state.weather);
+    const actualRaw = state.numeric[item.key];
+    let stampClass = 'pending', stampText = '―';
+    if(actualRaw !== undefined && actualRaw !== ''){
+      const actual = parseFloat(actualRaw);
+      if(!isNaN(actual)){
+        if(actual >= required){ stampClass='ok'; stampText='⭕'; }
+        else{ stampClass='ng'; stampText='❌'; }
+      }
+    }
+    const row = document.createElement('div');
+    row.className = 'item';
+    row.innerHTML = `
+      <div class="item-main">
+        <p class="item-name">${item.name}</p>
+        <p class="item-req">必要量: ${fmt(required)}${item.unit}</p>
+      </div>
+      <div class="item-input-wrap">
+        <input class="item-input" type="number" step="0.1" min="0" inputmode="decimal"
+          value="${actualRaw !== undefined ? actualRaw : ''}" data-key="${item.key}">
+        <span class="item-unit">${item.unit}</span>
+      </div>
+      <div class="stamp ${stampClass}">${stampText}</div>
+    `;
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('.item-input').forEach(input=>{
+    input.addEventListener('input', e=>{
+      state.numeric[e.target.dataset.key] = e.target.value;
+      renderNumeric();
+      renderSummary();
+    });
+  });
+}
+
+function renderBool(){
+  const list = document.getElementById('boolList');
+  list.innerHTML = '';
+  boolItems.forEach(item=>{
+    const val = state.bool[item.key];
+    const row = document.createElement('div');
+    row.className = 'item';
+    row.innerHTML = `
+      <div class="item-main">
+        <p class="item-name">${item.name}</p>
+        <p class="item-req">送れているか</p>
+      </div>
+      <div class="bool-toggle">
+        <button class="bool-btn ${val==='ok'?'active-ok':''}" data-key="${item.key}" data-val="ok">済</button>
+        <button class="bool-btn ${val==='ng'?'active-ng':''}" data-key="${item.key}" data-val="ng">未</button>
+      </div>
+      <div class="stamp ${val==='ok'?'ok':val==='ng'?'ng':'pending'}">${val==='ok'?'⭕':val==='ng'?'❌':'―'}</div>
+    `;
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('.bool-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const key = e.currentTarget.dataset.key;
+      const val = e.currentTarget.dataset.val;
+      state.bool[key] = state.bool[key] === val ? undefined : val;
+      renderBool();
+      renderSummary();
+    });
+  });
+}
+
+function renderWaste(){
+  const block = document.getElementById('wasteBlock');
+  const hasToday = state.wasteHasToday;
+  const done = state.wasteDone;
+
+  let stampClass = 'pending', stampText = '―';
+  if(hasToday === 'no'){ stampClass='ng'; stampText='❌'; }
+  else if(hasToday === 'yes'){
+    if(done === 'ok'){ stampClass='ok'; stampText='⭕'; }
+    else if(done === 'ng'){ stampClass='ng'; stampText='❌'; }
+  }
+
+  block.innerHTML = `
+    <p class="item-name">${wasteItemName}</p>
+    <div class="toggle-row" style="margin-bottom:${hasToday==='yes' ? '10px' : '0'};">
+      <button class="toggle-btn ${hasToday==='yes'?'active':''}" id="wasteYes">ある日</button>
+      <button class="toggle-btn ${hasToday==='no'?'active':''}" id="wasteNo">無い日</button>
+    </div>
+    <div id="wasteDoneRow" class="${hasToday==='yes' ? '' : 'hidden'}" style="display:flex;align-items:center;justify-content:space-between;">
+      <p class="item-req" style="margin:0;">廃棄チェック送れているか</p>
+      <div class="bool-toggle">
+        <button class="bool-btn ${done==='ok'?'active-ok':''}" id="wasteDoneOk">済</button>
+        <button class="bool-btn ${done==='ng'?'active-ng':''}" id="wasteDoneNg">未</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+      <div class="stamp ${stampClass}">${stampText}</div>
+    </div>
+  `;
+
+  document.getElementById('wasteYes').addEventListener('click', ()=>{
+    state.wasteHasToday = 'yes';
+    renderWaste(); renderSummary();
+  });
+  document.getElementById('wasteNo').addEventListener('click', ()=>{
+    state.wasteHasToday = 'no';
+    state.wasteDone = null;
+    renderWaste(); renderSummary();
+  });
+  const okBtn = document.getElementById('wasteDoneOk');
+  const ngBtn = document.getElementById('wasteDoneNg');
+  if(okBtn){
+    okBtn.addEventListener('click', ()=>{
+      state.wasteDone = state.wasteDone === 'ok' ? null : 'ok';
+      renderWaste(); renderSummary();
+    });
+    ngBtn.addEventListener('click', ()=>{
+      state.wasteDone = state.wasteDone === 'ng' ? null : 'ng';
+      renderWaste(); renderSummary();
+    });
+  }
+}
+
+function getAllStatuses(){
+  const statuses = [];
+  numericItems.forEach(item=>{
+    const raw = state.numeric[item.key];
+    if(raw !== undefined && raw !== '' && !isNaN(parseFloat(raw))){
+      const required = item.req(state.day, state.weather);
+      statuses.push(parseFloat(raw) >= required ? 'ok' : 'ng');
+    }
+  });
+  boolItems.forEach(item=>{
+    const val = state.bool[item.key];
+    if(val) statuses.push(val);
+  });
+  if(state.wasteHasToday === 'no') statuses.push('ng');
+  else if(state.wasteHasToday === 'yes' && state.wasteDone) statuses.push(state.wasteDone);
+  return statuses;
+}
+
+function renderSummary(){
+  const statuses = getAllStatuses();
+  const ok = statuses.filter(s=>s==='ok').length;
+  const ng = statuses.filter(s=>s==='ng').length;
+  document.getElementById('okCount').textContent = `⭕ ${ok}`;
+  document.getElementById('ngCount').textContent = `❌ ${ng}`;
+}
+
+function buildOutputText(){
+  const lines = [];
+  lines.push('◎確認仕込みチェック表');
+  lines.push(`明日：${state.day} / ${state.weather}`);
+  lines.push('');
+  numericItems.forEach(item=>{
+    const raw = state.numeric[item.key];
+    if(raw === undefined || raw === '' || isNaN(parseFloat(raw))) return;
+    const required = item.req(state.day, state.weather);
+    const actual = parseFloat(raw);
+    const mark = actual >= required ? '⭕' : '❌';
+    lines.push(`${item.name}（必要${fmt(required)}${item.unit}）：${mark}${fmt(actual)}${item.unit}`);
+  });
+  boolItems.forEach(item=>{
+    const val = state.bool[item.key];
+    if(!val) return;
+    lines.push(`${item.name}：${val==='ok' ? '⭕' : '❌'}`);
+  });
+  if(state.wasteHasToday === 'no'){
+    lines.push(`${wasteItemName}（無い日）：❌`);
+  } else if(state.wasteHasToday === 'yes' && state.wasteDone){
+    lines.push(`${wasteItemName}（ある日）：${state.wasteDone==='ok' ? '⭕' : '❌'}`);
+  }
+  return lines.join('\n');
+}
+
+document.getElementById('dayToggle').addEventListener('click', e=>{
+  const btn = e.target.closest('.toggle-btn');
+  if(!btn) return;
+  state.day = btn.dataset.day;
+  renderToggles(); renderNumeric(); renderSummary();
+});
+document.getElementById('weatherToggle').addEventListener('click', e=>{
+  const btn = e.target.closest('.toggle-btn');
+  if(!btn) return;
+  state.weather = btn.dataset.weather;
+  renderToggles(); renderNumeric(); renderSummary();
+});
+
+document.getElementById('copyBtn').addEventListener('click', ()=>{
+  const text = buildOutputText();
+  const area = document.getElementById('outputArea');
+  area.value = text;
+  area.classList.remove('hidden');
+  area.select();
+  try{
+    navigator.clipboard.writeText(text);
+    document.getElementById('copyBtn').textContent = 'コピーしました';
+    setTimeout(()=>{ document.getElementById('copyBtn').textContent = 'LINE送信用テキストをコピー'; }, 1800);
+  }catch(err){
+    // clipboard API unavailable — textarea is shown and selected for manual copy
+  }
+});
+
+async function init(){
+  document.getElementById('numericList').innerHTML = '<div class="item"><p class="item-req">読み込み中…</p></div>';
+  await loadConfig();
+  renderToggles();
+  renderNumeric();
+  renderBool();
+  renderWaste();
+  renderSummary();
+}
+init();
+</script>
+</body>
+</html>
