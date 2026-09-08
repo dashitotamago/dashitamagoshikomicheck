@@ -330,8 +330,8 @@ const DEFAULT_CONFIG = {
     { key:'pan',     name:'食パン解凍',   unit:'人前',  sunnyWeekday:20,  sunnyWeekend:50,  rainWeekday:10,  rainWeekend:10 },
   ],
   boolItems: [
-    { key:'hacchu', name:'発注・掃除写真', appliesSunny:true, appliesRain:true },
-    { key:'tenki',  name:'天気チェック', appliesSunny:true, appliesRain:true },
+    { key:'hacchu', name:'発注・掃除写真', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
+    { key:'tenki',  name:'天気チェック', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
   ],
   wasteItem: { name:'廃棄チェック' }
 };
@@ -371,11 +371,25 @@ async function loadConfig(){
       }
     };
   });
-  boolItems = (config.boolItems || []).map(cfg => ({
-    key: cfg.key, name: cfg.name,
-    appliesSunny: cfg.appliesSunny !== undefined ? cfg.appliesSunny : true,
-    appliesRain: cfg.appliesRain !== undefined ? cfg.appliesRain : true
-  }));
+  boolItems = (config.boolItems || []).map(cfg => {
+    // 旧スキーマ(appliesSunny/appliesRain)からの移行に対応
+    if(cfg.appliesSunnyWeekday !== undefined){
+      return {
+        key: cfg.key, name: cfg.name,
+        appliesSunnyWeekday: cfg.appliesSunnyWeekday,
+        appliesSunnyWeekend: cfg.appliesSunnyWeekend,
+        appliesRainWeekday: cfg.appliesRainWeekday,
+        appliesRainWeekend: cfg.appliesRainWeekend
+      };
+    }
+    const sunny = cfg.appliesSunny !== undefined ? cfg.appliesSunny : true;
+    const rain = cfg.appliesRain !== undefined ? cfg.appliesRain : true;
+    return {
+      key: cfg.key, name: cfg.name,
+      appliesSunnyWeekday: sunny, appliesSunnyWeekend: sunny,
+      appliesRainWeekday: rain, appliesRainWeekend: rain
+    };
+  });
   wasteItemName = config.wasteItem ? config.wasteItem.name : '廃棄チェック';
 }
 
@@ -433,7 +447,10 @@ function renderNumeric(){
 }
 
 function isBoolApplicable(item){
-  return state.weather === '雨' ? item.appliesRain : item.appliesSunny;
+  if(state.weather === '雨'){
+    return state.day === '平日' ? item.appliesRainWeekday : item.appliesRainWeekend;
+  }
+  return state.day === '平日' ? item.appliesSunnyWeekday : item.appliesSunnyWeekend;
 }
 
 function renderBool(){
@@ -612,7 +629,7 @@ document.getElementById('dayToggle').addEventListener('click', e=>{
   const btn = e.target.closest('.toggle-btn');
   if(!btn) return;
   state.day = btn.dataset.day;
-  renderToggles(); renderNumeric(); renderSummary();
+  renderToggles(); renderNumeric(); renderBool(); renderSummary();
 });
 document.getElementById('weatherToggle').addEventListener('click', e=>{
   const btn = e.target.closest('.toggle-btn');
