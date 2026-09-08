@@ -330,8 +330,8 @@ const DEFAULT_CONFIG = {
     { key:'pan',     name:'食パン解凍',   unit:'人前',  sunnyWeekday:20,  sunnyWeekend:50,  rainWeekday:10,  rainWeekend:10 },
   ],
   boolItems: [
-    { key:'hacchu', name:'発注・掃除写真' },
-    { key:'tenki',  name:'天気チェック' },
+    { key:'hacchu', name:'発注・掃除写真', appliesSunny:true, appliesRain:true },
+    { key:'tenki',  name:'天気チェック', appliesSunny:true, appliesRain:true },
   ],
   wasteItem: { name:'廃棄チェック' }
 };
@@ -371,7 +371,11 @@ async function loadConfig(){
       }
     };
   });
-  boolItems = (config.boolItems || []).map(cfg => ({ key: cfg.key, name: cfg.name }));
+  boolItems = (config.boolItems || []).map(cfg => ({
+    key: cfg.key, name: cfg.name,
+    appliesSunny: cfg.appliesSunny !== undefined ? cfg.appliesSunny : true,
+    appliesRain: cfg.appliesRain !== undefined ? cfg.appliesRain : true
+  }));
   wasteItemName = config.wasteItem ? config.wasteItem.name : '廃棄チェック';
 }
 
@@ -428,10 +432,18 @@ function renderNumeric(){
   });
 }
 
+function isBoolApplicable(item){
+  return state.weather === '雨' ? item.appliesRain : item.appliesSunny;
+}
+
 function renderBool(){
   const list = document.getElementById('boolList');
   list.innerHTML = '';
-  boolItems.forEach(item=>{
+  const applicable = boolItems.filter(isBoolApplicable);
+  if(applicable.length === 0){
+    list.innerHTML = '<div class="item"><p class="item-req">本日の天気では確認事項はありません</p></div>';
+  }
+  applicable.forEach(item=>{
     const val = state.bool[item.key];
     const row = document.createElement('div');
     row.className = 'item';
@@ -522,7 +534,7 @@ function getAllStatuses(){
       statuses.push(parseFloat(raw) >= required ? 'ok' : 'ng');
     }
   });
-  boolItems.forEach(item=>{
+  boolItems.filter(isBoolApplicable).forEach(item=>{
     const val = state.bool[item.key];
     if(val) statuses.push(val);
   });
@@ -537,7 +549,7 @@ function getMissingItemNames(){
     const raw = state.numeric[item.key];
     if(raw === undefined || raw === '' || isNaN(parseFloat(raw))) missing.push(item.name);
   });
-  boolItems.forEach(item=>{
+  boolItems.filter(isBoolApplicable).forEach(item=>{
     if(!state.bool[item.key]) missing.push(item.name);
   });
   if(state.wasteHasToday === null || state.wasteHasToday === undefined){
@@ -583,7 +595,7 @@ function buildOutputText(){
     const mark = actual >= required ? '⭕' : '❌';
     lines.push(`${item.name}（必要${fmt(required)}${item.unit}）：${mark}${fmt(actual)}${item.unit}`);
   });
-  boolItems.forEach(item=>{
+  boolItems.filter(isBoolApplicable).forEach(item=>{
     const val = state.bool[item.key];
     if(!val) return;
     lines.push(`${item.name}：${val==='ok' ? '⭕' : '❌'}`);
@@ -606,7 +618,7 @@ document.getElementById('weatherToggle').addEventListener('click', e=>{
   const btn = e.target.closest('.toggle-btn');
   if(!btn) return;
   state.weather = btn.dataset.weather;
-  renderToggles(); renderNumeric(); renderSummary();
+  renderToggles(); renderNumeric(); renderBool(); renderSummary();
 });
 
 document.getElementById('copyBtn').addEventListener('click', ()=>{
