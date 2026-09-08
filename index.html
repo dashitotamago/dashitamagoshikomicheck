@@ -471,6 +471,7 @@ function stepForUnit(unit){
 
 function confirmExactIfWhole(item, rawValue){
   if(rawValue === undefined || rawValue === '' || rawValue === null) return;
+  if(item.unit === '本' || item.unit === '人前') return; // 必ず1単位なので確認不要
   if(rawValue.indexOf('.') !== -1) return; // 小数点入力済みなら確認不要
   if(!/^\d+$/.test(rawValue)) return; // 数値として不正な場合は何もしない
   if(state.numericConfirmed[item.key] === rawValue) return; // 同じ値は再確認しない
