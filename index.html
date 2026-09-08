@@ -119,25 +119,57 @@
     color:var(--ink-soft);
     margin:0;
   }
-  .item-input-wrap{
+  .item-numeric{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:12px;
+  }
+  .item-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    width:100%;
+  }
+  .qty-row{
     display:flex;
     align-items:center;
-    gap:6px;
-    flex-shrink:0;
+    justify-content:flex-end;
+    gap:8px;
   }
+  .qty-btn{
+    width:40px;
+    height:40px;
+    flex-shrink:0;
+    border-radius:50%;
+    border:1.5px solid var(--paper-edge);
+    background:#fff;
+    color:var(--ink);
+    font-size:20px;
+    font-weight:700;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    user-select:none;
+  }
+  .qty-btn:active{background:#FFF3D9;border-color:var(--egg-deep);}
   .item-input{
-    width:64px;
+    width:88px;
     font-family:inherit;
-    font-size:16px;
+    font-size:20px;
+    font-weight:700;
     text-align:center;
-    padding:9px 4px;
+    padding:10px 4px;
     border:1.5px solid var(--paper-edge);
     border-radius:3px;
     background:#fff;
     color:var(--ink);
   }
   .item-input:focus{outline:none;border-color:var(--egg-deep);}
-  .item-unit{font-size:12px;color:var(--ink-soft);width:34px;}
+  .item-unit{font-size:13px;color:var(--ink-soft);width:auto;min-width:40px;}
 
   .stamp{
     width:46px;
@@ -305,6 +337,7 @@ const state = {
   day: '平日',
   weather: '晴れ',
   numeric: {},   // key -> actual string
+  numericConfirmed: {}, // key -> 確認済みの値（小数点なし入力の確認用）
   bool: {},      // key -> 'ok' | 'ng' | undefined
   wasteHasToday: null, // 'yes' | 'no' | null
   wasteDone: null,      // 'ok' | 'ng' | null
@@ -431,6 +464,33 @@ function renderToggles(){
   });
 }
 
+function stepForUnit(unit){
+  if(unit === '缶' || unit === '本' || unit === '人前') return 1;
+  return 0.5;
+}
+
+function confirmExactIfWhole(item, rawValue){
+  if(rawValue === undefined || rawValue === '' || rawValue === null) return;
+  if(rawValue.indexOf('.') !== -1) return; // 小数点入力済みなら確認不要
+  if(!/^\d+$/.test(rawValue)) return; // 数値として不正な場合は何もしない
+  if(state.numericConfirmed[item.key] === rawValue) return; // 同じ値は再確認しない
+  const ok = confirm(`${item.name}：${rawValue}${item.unit}\n本当に全て満タンで未使用で入っていますか？`);
+  if(ok){
+    state.numericConfirmed[item.key] = rawValue;
+  } else {
+    const input = document.querySelector(`.item-input[data-key="${item.key}"]`);
+    if(input) input.focus();
+  }
+}
+
+function setNumericValue(item, newValue){
+  const clamped = Math.max(0, Math.round(newValue * 10) / 10);
+  state.numeric[item.key] = String(clamped);
+  delete state.numericConfirmed[item.key];
+  renderNumeric();
+  renderSummary();
+}
+
 function renderNumeric(){
   const list = document.getElementById('numericList');
   list.innerHTML = '';
@@ -446,29 +506,72 @@ function renderNumeric(){
       }
     }
     const row = document.createElement('div');
-    row.className = 'item';
+    row.className = 'item item-numeric';
     row.innerHTML = `
-      <div class="item-main">
-        <p class="item-name">${item.name}</p>
-        <p class="item-req">必要量: ${fmt(required)}${item.unit}</p>
+      <div class="item-top">
+        <div class="item-main">
+          <p class="item-name">${item.name}</p>
+          <p class="item-req">必要量: ${fmt(required)}${item.unit}</p>
+        </div>
+        <div class="stamp ${stampClass}">${stampText}</div>
       </div>
-      <div class="item-input-wrap">
+      <div class="qty-row">
+        <button type="button" class="qty-btn" data-key="${item.key}" data-action="minus">−</button>
         <input class="item-input" type="number" step="0.1" min="0" inputmode="decimal"
           value="${actualRaw !== undefined ? actualRaw : ''}" data-key="${item.key}">
         <span class="item-unit">${item.unit}</span>
+        <button type="button" class="qty-btn" data-key="${item.key}" data-action="plus">＋</button>
       </div>
-      <div class="stamp ${stampClass}">${stampText}</div>
     `;
     list.appendChild(row);
   });
 
   list.querySelectorAll('.item-input').forEach(input=>{
     input.addEventListener('input', e=>{
-      state.numeric[e.target.dataset.key] = e.target.value;
-      renderNumeric();
+      const key = e.target.dataset.key;
+      state.numeric[key] = e.target.value;
+      delete state.numericConfirmed[key];
+      updateNumericStamp(key, e.target.value);
       renderSummary();
     });
+    input.addEventListener('blur', e=>{
+      const item = numericItems.find(i => i.key === e.target.dataset.key);
+      if(item) confirmExactIfWhole(item, e.target.value);
+    });
   });
+
+  list.querySelectorAll('.qty-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const key = e.currentTarget.dataset.key;
+      const item = numericItems.find(i => i.key === key);
+      if(!item) return;
+      const step = stepForUnit(item.unit);
+      const current = parseFloat(state.numeric[key]);
+      const base = isNaN(current) ? 0 : current;
+      const next = e.currentTarget.dataset.action === 'plus' ? base + step : base - step;
+      setNumericValue(item, next);
+    });
+  });
+}
+
+function updateNumericStamp(key, rawValue){
+  const item = numericItems.find(i => i.key === key);
+  if(!item) return;
+  const input = document.querySelector(`.item-input[data-key="${key}"]`);
+  const row = input ? input.closest('.item-numeric') : null;
+  if(!row) return;
+  const stampEl = row.querySelector('.stamp');
+  const required = item.req(state.day, state.weather);
+  let stampClass = 'pending', stampText = '―';
+  if(rawValue !== undefined && rawValue !== ''){
+    const actual = parseFloat(rawValue);
+    if(!isNaN(actual)){
+      if(actual >= required){ stampClass='ok'; stampText='⭕'; }
+      else{ stampClass='ng'; stampText='❌'; }
+    }
+  }
+  stampEl.className = `stamp ${stampClass}`;
+  stampEl.textContent = stampText;
 }
 
 function isBoolApplicable(item){
