@@ -294,6 +294,7 @@
     </div>
     <button class="copy-btn" id="copyBtn">LINE送信用テキストをコピー</button>
     <p class="copy-note" id="copyNote">未入力の項目はテキストに含まれません</p>
+    <p class="copy-note" id="closeStatusMsg"></p>
     <textarea class="output hidden" id="outputArea" readonly></textarea>
   </section>
 
@@ -306,12 +307,36 @@ const state = {
   numeric: {},   // key -> actual string
   bool: {},      // key -> 'ok' | 'ng' | undefined
   wasteHasToday: null, // 'yes' | 'no' | null
-  wasteDone: null      // 'ok' | 'ng' | null
+  wasteDone: null,      // 'ok' | 'ng' | null
+  closeActionDone: false // 雨の日の臨時休業/スタッフ縮小連絡を送信済みか
 };
 
 // ここにGoogle Apps ScriptのウェブアプリURL（末尾が/execのURL）を貼り付けてください。
 // 未設定の間は既定値（DEFAULT_CONFIG）で動作します。
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbx4h2CYCha-VND-l0JQeeucMDs-a11K2RJCXnR6ekSX4KNKRTluvgCRQ0fKyZ17jYBQ/exec';
+
+// 臨時休業・スタッフ縮小の連絡（close-tomorrow.html）と同じGASウェブアプリのURLと合言葉です。
+// 雨の日にコピーすると、close-tomorrow.htmlのボタンを押したのと同じ処理が自動で送信されます。
+const CLOSE_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzkxyY8RxTDBH5wbsJjC6eJI_NFVODsOh_0PVxSj5Jy8GYCpmD8Rj2CP6FzATiQJmtMTA/exec';
+const CLOSE_PASSCODE = '0310';
+
+function postToCloseGAS(payload){
+  return new Promise((resolve, reject)=>{
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', CLOSE_GAS_ENDPOINT, true);
+    xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+    xhr.onload = function(){
+      if(xhr.status >= 200 && xhr.status < 300){
+        try{ resolve(JSON.parse(xhr.responseText)); }
+        catch(e){ reject(new Error('サーバーからの応答を読み取れませんでした')); }
+      }else{
+        reject(new Error('通信エラー（' + xhr.status + '）'));
+      }
+    };
+    xhr.onerror = function(){ reject(new Error('通信に失敗しました。')); };
+    xhr.send(JSON.stringify(payload));
+  });
+}
 
 let numericItems = [];
 let boolItems = [];
@@ -629,16 +654,20 @@ document.getElementById('dayToggle').addEventListener('click', e=>{
   const btn = e.target.closest('.toggle-btn');
   if(!btn) return;
   state.day = btn.dataset.day;
+  state.closeActionDone = false;
+  document.getElementById('closeStatusMsg').textContent = '';
   renderToggles(); renderNumeric(); renderBool(); renderSummary();
 });
 document.getElementById('weatherToggle').addEventListener('click', e=>{
   const btn = e.target.closest('.toggle-btn');
   if(!btn) return;
   state.weather = btn.dataset.weather;
+  state.closeActionDone = false;
+  document.getElementById('closeStatusMsg').textContent = '';
   renderToggles(); renderNumeric(); renderBool(); renderSummary();
 });
 
-document.getElementById('copyBtn').addEventListener('click', ()=>{
+document.getElementById('copyBtn').addEventListener('click', async ()=>{
   if(getMissingItemNames().length > 0) return;
   const text = buildOutputText();
   const area = document.getElementById('outputArea');
@@ -651,6 +680,29 @@ document.getElementById('copyBtn').addEventListener('click', ()=>{
     setTimeout(()=>{ document.getElementById('copyBtn').textContent = 'LINE送信用テキストをコピー'; }, 1800);
   }catch(err){
     // clipboard API unavailable — textarea is shown and selected for manual copy
+  }
+
+  if(state.weather === '雨' && !state.closeActionDone){
+    const closeStatus = document.getElementById('closeStatusMsg');
+    const type = state.day === '平日' ? 'closeTomorrow' : 'staffReduced';
+    const label = state.day === '平日' ? '明日を臨時休業として登録し、LINEに告知' : 'LINEに「スタッフ縮小」の告知を送信';
+    if(confirm(`明日は雨予報です。${label}します。よろしいですか？`)){
+      closeStatus.textContent = '送信中…';
+      try{
+        const json = await postToCloseGAS({ type, passcode: CLOSE_PASSCODE });
+        if(!json.ok) throw new Error(json.error || '送信できませんでした');
+        state.closeActionDone = true;
+        if(type === 'closeTomorrow'){
+          closeStatus.textContent = json.alreadyClosed
+            ? `明日（${json.tomorrowStr}）はすでに臨時休業登録済みでした。LINEに再告知しました。`
+            : `明日（${json.tomorrowStr}）を臨時休業として登録し、LINEに告知しました。`;
+        } else {
+          closeStatus.textContent = 'LINEに「スタッフ縮小」の告知を送信しました。';
+        }
+      }catch(err){
+        closeStatus.textContent = '送信できませんでした：' + err.message;
+      }
+    }
   }
 });
 
