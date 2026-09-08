@@ -196,7 +196,7 @@
 
   <section>
     <p class="section-title">確認事項（済／未タイプ）</p>
-    <p class="section-help">量ではなく「送れたか」を済/未で確認する項目。</p>
+    <p class="section-help">量ではなく「送れたか」を済/未で確認する項目。晴れ・雨それぞれ確認するかどうかも指定できます。</p>
     <div class="ticket" id="boolRows"></div>
     <button class="add-btn" id="addBoolBtn">＋ 確認事項を追加</button>
   </section>
@@ -233,8 +233,8 @@ const DEFAULT_CONFIG = {
     { key:'pan',     name:'食パン解凍',   unit:'人前',  sunnyWeekday:20,  sunnyWeekend:50,  rainWeekday:10,  rainWeekend:10 },
   ],
   boolItems: [
-    { key:'hacchu', name:'発注・掃除写真' },
-    { key:'tenki',  name:'天気チェック' },
+    { key:'hacchu', name:'発注・掃除写真', appliesSunny:true, appliesRain:true },
+    { key:'tenki',  name:'天気チェック', appliesSunny:true, appliesRain:true },
   ],
   wasteItem: { name:'廃棄チェック' }
 };
@@ -262,6 +262,14 @@ function normalizeNumericItem(cfg){
   return { key: cfg.key, name: cfg.name, unit: cfg.unit, sunnyWeekday: sw, sunnyWeekend: se, rainWeekday: rw, rainWeekend: re };
 }
 
+function normalizeBoolItem(cfg){
+  return {
+    key: cfg.key, name: cfg.name,
+    appliesSunny: cfg.appliesSunny !== undefined ? cfg.appliesSunny : true,
+    appliesRain: cfg.appliesRain !== undefined ? cfg.appliesRain : true
+  };
+}
+
 async function loadConfig(){
   if(GAS_URL && GAS_URL.indexOf('PASTE_') !== 0){
     try{
@@ -272,6 +280,7 @@ async function loadConfig(){
         if(parsed && parsed.numericItems){
           config = parsed;
           config.numericItems = config.numericItems.map(normalizeNumericItem);
+          config.boolItems = (config.boolItems || []).map(normalizeBoolItem);
           return;
         }
       }
@@ -361,6 +370,12 @@ function renderBool(){
         <label>項目名</label>
         <input type="text" data-idx="${idx}" data-field="name" value="${item.name}">
       </div>
+      <div class="rain-line">
+        <label><input type="checkbox" data-idx="${idx}" data-field="appliesSunny" ${item.appliesSunny ? 'checked' : ''}> 晴れの日に確認する</label>
+      </div>
+      <div class="rain-line">
+        <label><input type="checkbox" data-idx="${idx}" data-field="appliesRain" ${item.appliesRain ? 'checked' : ''}> 雨の日に確認する</label>
+      </div>
       <div class="row-actions">
         <button class="delete-btn" data-idx="${idx}" data-action="delete-bool">削除</button>
       </div>
@@ -372,6 +387,13 @@ function renderBool(){
     input.addEventListener('input', e=>{
       const idx = parseInt(e.target.dataset.idx, 10);
       config.boolItems[idx].name = e.target.value;
+    });
+  });
+  wrap.querySelectorAll('input[data-field="appliesSunny"], input[data-field="appliesRain"]').forEach(input=>{
+    input.addEventListener('change', e=>{
+      const idx = parseInt(e.target.dataset.idx, 10);
+      const field = e.target.dataset.field;
+      config.boolItems[idx][field] = e.target.checked;
     });
   });
   wrap.querySelectorAll('[data-action="delete-bool"]').forEach(btn=>{
@@ -391,7 +413,7 @@ document.getElementById('addNumericBtn').addEventListener('click', ()=>{
 });
 
 document.getElementById('addBoolBtn').addEventListener('click', ()=>{
-  config.boolItems.push({ key: newKey('bool'), name:'新しい確認事項' });
+  config.boolItems.push({ key: newKey('bool'), name:'新しい確認事項', appliesSunny:true, appliesRain:true });
   renderBool();
 });
 
