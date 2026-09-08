@@ -196,7 +196,7 @@
 
   <section>
     <p class="section-title">確認事項（済／未タイプ）</p>
-    <p class="section-help">量ではなく「送れたか」を済/未で確認する項目。晴れ・雨それぞれ確認するかどうかも指定できます。</p>
+    <p class="section-help">量ではなく「送れたか」を済/未で確認する項目。晴れ・平日／晴れ・土日祝／雨・平日／雨・土日祝の4パターンごとに確認するかどうかを指定できます。</p>
     <div class="ticket" id="boolRows"></div>
     <button class="add-btn" id="addBoolBtn">＋ 確認事項を追加</button>
   </section>
@@ -233,8 +233,8 @@ const DEFAULT_CONFIG = {
     { key:'pan',     name:'食パン解凍',   unit:'人前',  sunnyWeekday:20,  sunnyWeekend:50,  rainWeekday:10,  rainWeekend:10 },
   ],
   boolItems: [
-    { key:'hacchu', name:'発注・掃除写真', appliesSunny:true, appliesRain:true },
-    { key:'tenki',  name:'天気チェック', appliesSunny:true, appliesRain:true },
+    { key:'hacchu', name:'発注・掃除写真', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
+    { key:'tenki',  name:'天気チェック', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
   ],
   wasteItem: { name:'廃棄チェック' }
 };
@@ -263,10 +263,22 @@ function normalizeNumericItem(cfg){
 }
 
 function normalizeBoolItem(cfg){
+  if(cfg.appliesSunnyWeekday !== undefined){
+    return {
+      key: cfg.key, name: cfg.name,
+      appliesSunnyWeekday: cfg.appliesSunnyWeekday,
+      appliesSunnyWeekend: cfg.appliesSunnyWeekend,
+      appliesRainWeekday: cfg.appliesRainWeekday,
+      appliesRainWeekend: cfg.appliesRainWeekend
+    };
+  }
+  // 旧スキーマ(appliesSunny/appliesRain)からの移行に対応
+  const sunny = cfg.appliesSunny !== undefined ? cfg.appliesSunny : true;
+  const rain = cfg.appliesRain !== undefined ? cfg.appliesRain : true;
   return {
     key: cfg.key, name: cfg.name,
-    appliesSunny: cfg.appliesSunny !== undefined ? cfg.appliesSunny : true,
-    appliesRain: cfg.appliesRain !== undefined ? cfg.appliesRain : true
+    appliesSunnyWeekday: sunny, appliesSunnyWeekend: sunny,
+    appliesRainWeekday: rain, appliesRainWeekend: rain
   };
 }
 
@@ -370,11 +382,16 @@ function renderBool(){
         <label>項目名</label>
         <input type="text" data-idx="${idx}" data-field="name" value="${item.name}">
       </div>
-      <div class="rain-line">
-        <label><input type="checkbox" data-idx="${idx}" data-field="appliesSunny" ${item.appliesSunny ? 'checked' : ''}> 晴れの日に確認する</label>
+      <div class="field">
+        <label>確認する条件</label>
       </div>
-      <div class="rain-line">
-        <label><input type="checkbox" data-idx="${idx}" data-field="appliesRain" ${item.appliesRain ? 'checked' : ''}> 雨の日に確認する</label>
+      <div class="field-row2">
+        <label class="rain-line"><input type="checkbox" data-idx="${idx}" data-field="appliesSunnyWeekday" ${item.appliesSunnyWeekday ? 'checked' : ''}> 晴れ・平日</label>
+        <label class="rain-line"><input type="checkbox" data-idx="${idx}" data-field="appliesSunnyWeekend" ${item.appliesSunnyWeekend ? 'checked' : ''}> 晴れ・土日祝</label>
+      </div>
+      <div class="field-row2">
+        <label class="rain-line"><input type="checkbox" data-idx="${idx}" data-field="appliesRainWeekday" ${item.appliesRainWeekday ? 'checked' : ''}> 雨・平日</label>
+        <label class="rain-line"><input type="checkbox" data-idx="${idx}" data-field="appliesRainWeekend" ${item.appliesRainWeekend ? 'checked' : ''}> 雨・土日祝</label>
       </div>
       <div class="row-actions">
         <button class="delete-btn" data-idx="${idx}" data-action="delete-bool">削除</button>
@@ -389,7 +406,7 @@ function renderBool(){
       config.boolItems[idx].name = e.target.value;
     });
   });
-  wrap.querySelectorAll('input[data-field="appliesSunny"], input[data-field="appliesRain"]').forEach(input=>{
+  wrap.querySelectorAll('input[data-field="appliesSunnyWeekday"], input[data-field="appliesSunnyWeekend"], input[data-field="appliesRainWeekday"], input[data-field="appliesRainWeekend"]').forEach(input=>{
     input.addEventListener('change', e=>{
       const idx = parseInt(e.target.dataset.idx, 10);
       const field = e.target.dataset.field;
@@ -413,7 +430,7 @@ document.getElementById('addNumericBtn').addEventListener('click', ()=>{
 });
 
 document.getElementById('addBoolBtn').addEventListener('click', ()=>{
-  config.boolItems.push({ key: newKey('bool'), name:'新しい確認事項', appliesSunny:true, appliesRain:true });
+  config.boolItems.push({ key: newKey('bool'), name:'新しい確認事項', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true });
   renderBool();
 });
 
