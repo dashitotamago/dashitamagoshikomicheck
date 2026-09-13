@@ -171,6 +171,26 @@
   .item-input:focus{outline:none;border-color:var(--egg-deep);}
   .item-unit{font-size:13px;color:var(--ink-soft);width:auto;min-width:40px;}
 
+  .reason-row{margin-top:2px;}
+  .reason-row.hidden{display:none;}
+  .reason-label{
+    font-size:11px;
+    color:var(--stamp-ok);
+    font-weight:700;
+    margin:0 0 4px;
+  }
+  .reason-input{
+    width:100%;
+    font-family:inherit;
+    font-size:13px;
+    padding:9px 10px;
+    border:1.5px solid var(--stamp-ok);
+    border-radius:3px;
+    background:#fff8f5;
+    color:var(--ink);
+  }
+  .reason-input:focus{outline:none;border-color:var(--stamp-ng);}
+
   .stamp{
     width:46px;
     height:46px;
@@ -341,7 +361,8 @@ const state = {
   bool: {},      // key -> 'ok' | 'ng' | undefined
   wasteHasToday: null, // 'yes' | 'no' | null
   wasteDone: null,      // 'ok' | 'ng' | null
-  closeActionDone: false // 雨の日の臨時休業/スタッフ縮小連絡を送信済みか
+  closeActionDone: false, // 雨の日の臨時休業/スタッフ縮小連絡を送信済みか
+  reasons: {}    // key -> ❌の理由テキスト（数量項目キー・確認事項キー・'waste'）
 };
 
 // ここにGoogle Apps ScriptのウェブアプリURL（末尾が/execのURL）を貼り付けてください。
@@ -523,6 +544,10 @@ function renderNumeric(){
         <span class="item-unit">${item.unit}</span>
         <button type="button" class="qty-btn" data-key="${item.key}" data-action="plus">＋</button>
       </div>
+      <div class="reason-row ${stampClass === 'ng' ? '' : 'hidden'}">
+        <p class="reason-label">不足の理由</p>
+        <input type="text" class="reason-input" placeholder="理由を記入" value="${state.reasons[item.key] || ''}" data-key="${item.key}">
+      </div>
     `;
     list.appendChild(row);
   });
@@ -538,6 +563,13 @@ function renderNumeric(){
     input.addEventListener('blur', e=>{
       const item = numericItems.find(i => i.key === e.target.dataset.key);
       if(item) confirmExactIfWhole(item, e.target.value);
+    });
+  });
+
+  list.querySelectorAll('.reason-input').forEach(input=>{
+    input.addEventListener('input', e=>{
+      state.reasons[e.target.dataset.key] = e.target.value;
+      updateCopyState();
     });
   });
 
@@ -573,6 +605,11 @@ function updateNumericStamp(key, rawValue){
   }
   stampEl.className = `stamp ${stampClass}`;
   stampEl.textContent = stampText;
+
+  const reasonRow = row.querySelector('.reason-row');
+  if(reasonRow){
+    reasonRow.classList.toggle('hidden', stampClass !== 'ng');
+  }
 }
 
 function isBoolApplicable(item){
@@ -592,17 +629,23 @@ function renderBool(){
   applicable.forEach(item=>{
     const val = state.bool[item.key];
     const row = document.createElement('div');
-    row.className = 'item';
+    row.className = 'item item-numeric';
     row.innerHTML = `
-      <div class="item-main">
-        <p class="item-name">${item.name}</p>
-        <p class="item-req">送れているか</p>
+      <div class="item-top">
+        <div class="item-main">
+          <p class="item-name">${item.name}</p>
+          <p class="item-req">送れているか</p>
+        </div>
+        <div class="bool-toggle">
+          <button class="bool-btn ${val==='ok'?'active-ok':''}" data-key="${item.key}" data-val="ok">済</button>
+          <button class="bool-btn ${val==='ng'?'active-ng':''}" data-key="${item.key}" data-val="ng">未</button>
+        </div>
+        <div class="stamp ${val==='ok'?'ok':val==='ng'?'ng':'pending'}">${val==='ok'?'⭕':val==='ng'?'❌':'―'}</div>
       </div>
-      <div class="bool-toggle">
-        <button class="bool-btn ${val==='ok'?'active-ok':''}" data-key="${item.key}" data-val="ok">済</button>
-        <button class="bool-btn ${val==='ng'?'active-ng':''}" data-key="${item.key}" data-val="ng">未</button>
+      <div class="reason-row ${val==='ng' ? '' : 'hidden'}">
+        <p class="reason-label">未対応の理由</p>
+        <input type="text" class="reason-input" placeholder="理由を記入" value="${state.reasons[item.key] || ''}" data-key="${item.key}">
       </div>
-      <div class="stamp ${val==='ok'?'ok':val==='ng'?'ng':'pending'}">${val==='ok'?'⭕':val==='ng'?'❌':'―'}</div>
     `;
     list.appendChild(row);
   });
@@ -616,6 +659,13 @@ function renderBool(){
       renderSummary();
     });
   });
+
+  list.querySelectorAll('.reason-input').forEach(input=>{
+    input.addEventListener('input', e=>{
+      state.reasons[e.target.dataset.key] = e.target.value;
+      updateCopyState();
+    });
+  });
 }
 
 function renderWaste(){
@@ -624,7 +674,7 @@ function renderWaste(){
   const done = state.wasteDone;
 
   let stampClass = 'pending', stampText = '―';
-  if(hasToday === 'no'){ stampClass='ng'; stampText='❌'; }
+  if(hasToday === 'no'){ stampClass='ok'; stampText='⭕'; }
   else if(hasToday === 'yes'){
     if(done === 'ok'){ stampClass='ok'; stampText='⭕'; }
     else if(done === 'ng'){ stampClass='ng'; stampText='❌'; }
@@ -642,6 +692,10 @@ function renderWaste(){
         <button class="bool-btn ${done==='ok'?'active-ok':''}" id="wasteDoneOk">済</button>
         <button class="bool-btn ${done==='ng'?'active-ng':''}" id="wasteDoneNg">未</button>
       </div>
+    </div>
+    <div class="reason-row ${stampClass === 'ng' ? '' : 'hidden'}" style="margin-top:10px;">
+      <p class="reason-label">未対応の理由</p>
+      <input type="text" class="reason-input" placeholder="理由を記入" value="${state.reasons['waste'] || ''}" data-key="waste">
     </div>
     <div style="display:flex;justify-content:flex-end;margin-top:10px;">
       <div class="stamp ${stampClass}">${stampText}</div>
@@ -669,6 +723,13 @@ function renderWaste(){
       renderWaste(); renderSummary();
     });
   }
+  const reasonInput = document.getElementById('wasteBlock').querySelector('.reason-input');
+  if(reasonInput){
+    reasonInput.addEventListener('input', e=>{
+      state.reasons['waste'] = e.target.value;
+      updateCopyState();
+    });
+  }
 }
 
 function getAllStatuses(){
@@ -684,7 +745,7 @@ function getAllStatuses(){
     const val = state.bool[item.key];
     if(val) statuses.push(val);
   });
-  if(state.wasteHasToday === 'no') statuses.push('ng');
+  if(state.wasteHasToday === 'no') statuses.push('ok');
   else if(state.wasteHasToday === 'yes' && state.wasteDone) statuses.push(state.wasteDone);
   return statuses;
 }
@@ -693,15 +754,28 @@ function getMissingItemNames(){
   const missing = [];
   numericItems.forEach(item=>{
     const raw = state.numeric[item.key];
-    if(raw === undefined || raw === '' || isNaN(parseFloat(raw))) missing.push(item.name);
+    if(raw === undefined || raw === '' || isNaN(parseFloat(raw))){
+      missing.push(item.name);
+    } else if(parseFloat(raw) < item.req(state.day, state.weather) && !(state.reasons[item.key] || '').trim()){
+      missing.push(`${item.name}の理由`);
+    }
   });
   boolItems.filter(isBoolApplicable).forEach(item=>{
-    if(!state.bool[item.key]) missing.push(item.name);
+    const val = state.bool[item.key];
+    if(!val){
+      missing.push(item.name);
+    } else if(val === 'ng' && !(state.reasons[item.key] || '').trim()){
+      missing.push(`${item.name}の理由`);
+    }
   });
   if(state.wasteHasToday === null || state.wasteHasToday === undefined){
     missing.push(wasteItemName);
-  } else if(state.wasteHasToday === 'yes' && !state.wasteDone){
-    missing.push(wasteItemName);
+  } else if(state.wasteHasToday === 'yes'){
+    if(!state.wasteDone){
+      missing.push(wasteItemName);
+    } else if(state.wasteDone === 'ng' && !(state.reasons['waste'] || '').trim()){
+      missing.push(`${wasteItemName}の理由`);
+    }
   }
   return missing;
 }
@@ -739,17 +813,29 @@ function buildOutputText(){
     const required = item.req(state.day, state.weather);
     const actual = parseFloat(raw);
     const mark = actual >= required ? '⭕' : '❌';
-    lines.push(`${item.name}（必要${fmt(required)}${item.unit}）：${mark}${fmt(actual)}${item.unit}`);
+    let line = `${item.name}（必要${fmt(required)}${item.unit}）：${mark}${fmt(actual)}${item.unit}`;
+    if(mark === '❌' && (state.reasons[item.key] || '').trim()){
+      line += `（理由：${state.reasons[item.key].trim()}）`;
+    }
+    lines.push(line);
   });
   boolItems.filter(isBoolApplicable).forEach(item=>{
     const val = state.bool[item.key];
     if(!val) return;
-    lines.push(`${item.name}：${val==='ok' ? '⭕' : '❌'}`);
+    let line = `${item.name}：${val==='ok' ? '⭕' : '❌'}`;
+    if(val === 'ng' && (state.reasons[item.key] || '').trim()){
+      line += `（理由：${state.reasons[item.key].trim()}）`;
+    }
+    lines.push(line);
   });
   if(state.wasteHasToday === 'no'){
-    lines.push(`${wasteItemName}（無い日）：❌`);
+    lines.push(`${wasteItemName}（無い日）：⭕`);
   } else if(state.wasteHasToday === 'yes' && state.wasteDone){
-    lines.push(`${wasteItemName}（ある日）：${state.wasteDone==='ok' ? '⭕' : '❌'}`);
+    let line = `${wasteItemName}（ある日）：${state.wasteDone==='ok' ? '⭕' : '❌'}`;
+    if(state.wasteDone === 'ng' && (state.reasons['waste'] || '').trim()){
+      line += `（理由：${state.reasons['waste'].trim()}）`;
+    }
+    lines.push(line);
   }
   return lines.join('\n');
 }
