@@ -326,11 +326,11 @@
       <button class="toggle-btn active" data-day="平日">平日</button>
       <button class="toggle-btn" data-day="休日">土日祝</button>
     </div>
+    <div class="item-note hidden" id="weatherGuide"></div>
     <div class="toggle-row" id="weatherToggle">
       <button class="toggle-btn active" data-weather="晴れ">晴れ</button>
       <button class="toggle-btn" data-weather="雨">雨</button>
     </div>
-    <p class="item-note hidden" id="weatherNote"></p>
   </section>
 
   <section>
@@ -502,15 +502,23 @@ function renderToggles(){
   document.querySelectorAll('#weatherToggle .toggle-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.weather === state.weather);
   });
-  const note = state.weather === '雨' ? weatherNotes.rain : weatherNotes.sunny;
-  const noteEl = document.getElementById('weatherNote');
-  if(note && note.trim()){
-    noteEl.textContent = note;
-    noteEl.classList.remove('hidden');
-  } else {
-    noteEl.textContent = '';
-    noteEl.classList.add('hidden');
+  renderWeatherGuide();
+}
+
+function renderWeatherGuide(){
+  const guideEl = document.getElementById('weatherGuide');
+  const sunny = (weatherNotes.sunny || '').trim();
+  const rain = (weatherNotes.rain || '').trim();
+  if(!sunny && !rain){
+    guideEl.innerHTML = '';
+    guideEl.classList.add('hidden');
+    return;
   }
+  let html = '<p style="margin:0 0 4px;font-weight:700;">天気の選び方の目安</p>';
+  if(sunny) html += `<p style="margin:0 0 2px;">☀️ 晴れ：${sunny}</p>`;
+  if(rain) html += `<p style="margin:0;">☂️ 雨：${rain}</p>`;
+  guideEl.innerHTML = html;
+  guideEl.classList.remove('hidden');
 }
 
 function stepForUnit(unit){
