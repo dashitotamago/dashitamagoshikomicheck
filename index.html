@@ -330,6 +330,7 @@
       <button class="toggle-btn active" data-weather="晴れ">晴れ</button>
       <button class="toggle-btn" data-weather="雨">雨</button>
     </div>
+    <p class="item-note hidden" id="weatherNote"></p>
   </section>
 
   <section>
@@ -406,6 +407,7 @@ let numericItems = [];
 let boolItems = [];
 let wasteItemName = '廃棄チェック';
 let wasteItemNote = '';
+let weatherNotes = { sunny: '', rain: '' };
 
 const DEFAULT_CONFIG = {
   numericItems: [
@@ -423,7 +425,8 @@ const DEFAULT_CONFIG = {
     { key:'hacchu', name:'発注・掃除写真', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
     { key:'tenki',  name:'天気チェック', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
   ],
-  wasteItem: { name:'廃棄チェック' }
+  wasteItem: { name:'廃棄チェック' },
+  weatherNotes: { sunny:'', rain:'' }
 };
 
 function normalizeNumericItem(cfg){
@@ -482,6 +485,10 @@ async function loadConfig(){
   });
   wasteItemName = config.wasteItem ? config.wasteItem.name : '廃棄チェック';
   wasteItemNote = config.wasteItem ? (config.wasteItem.note || '') : '';
+  weatherNotes = config.weatherNotes ? {
+    sunny: config.weatherNotes.sunny || '',
+    rain: config.weatherNotes.rain || ''
+  } : { sunny: '', rain: '' };
 }
 
 function fmt(n){
@@ -495,6 +502,15 @@ function renderToggles(){
   document.querySelectorAll('#weatherToggle .toggle-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.weather === state.weather);
   });
+  const note = state.weather === '雨' ? weatherNotes.rain : weatherNotes.sunny;
+  const noteEl = document.getElementById('weatherNote');
+  if(note && note.trim()){
+    noteEl.textContent = note;
+    noteEl.classList.remove('hidden');
+  } else {
+    noteEl.textContent = '';
+    noteEl.classList.add('hidden');
+  }
 }
 
 function stepForUnit(unit){
