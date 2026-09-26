@@ -119,6 +119,16 @@
     color:var(--ink-soft);
     margin:0;
   }
+  .item-note{
+    font-size:12px;
+    color:var(--dashi);
+    background:#FFF3D9;
+    border-left:3px solid var(--egg-deep);
+    padding:6px 8px;
+    margin:6px 0 0;
+    border-radius:2px;
+    line-height:1.5;
+  }
   .item-numeric{
     display:flex;
     flex-direction:column;
@@ -395,6 +405,7 @@ function postToCloseGAS(payload){
 let numericItems = [];
 let boolItems = [];
 let wasteItemName = '廃棄チェック';
+let wasteItemNote = '';
 
 const DEFAULT_CONFIG = {
   numericItems: [
@@ -443,7 +454,7 @@ async function loadConfig(){
   numericItems = config.numericItems.map(raw => {
     const cfg = normalizeNumericItem(raw);
     return {
-      key: cfg.key, name: cfg.name, unit: cfg.unit,
+      key: cfg.key, name: cfg.name, unit: cfg.unit, note: cfg.note || '',
       req: (d,w) => {
         if(w === '雨') return d === '平日' ? cfg.rainWeekday : cfg.rainWeekend;
         return d === '平日' ? cfg.sunnyWeekday : cfg.sunnyWeekend;
@@ -454,7 +465,7 @@ async function loadConfig(){
     // 旧スキーマ(appliesSunny/appliesRain)からの移行に対応
     if(cfg.appliesSunnyWeekday !== undefined){
       return {
-        key: cfg.key, name: cfg.name,
+        key: cfg.key, name: cfg.name, note: cfg.note || '',
         appliesSunnyWeekday: cfg.appliesSunnyWeekday,
         appliesSunnyWeekend: cfg.appliesSunnyWeekend,
         appliesRainWeekday: cfg.appliesRainWeekday,
@@ -464,12 +475,13 @@ async function loadConfig(){
     const sunny = cfg.appliesSunny !== undefined ? cfg.appliesSunny : true;
     const rain = cfg.appliesRain !== undefined ? cfg.appliesRain : true;
     return {
-      key: cfg.key, name: cfg.name,
+      key: cfg.key, name: cfg.name, note: cfg.note || '',
       appliesSunnyWeekday: sunny, appliesSunnyWeekend: sunny,
       appliesRainWeekday: rain, appliesRainWeekend: rain
     };
   });
   wasteItemName = config.wasteItem ? config.wasteItem.name : '廃棄チェック';
+  wasteItemNote = config.wasteItem ? (config.wasteItem.note || '') : '';
 }
 
 function fmt(n){
@@ -534,6 +546,7 @@ function renderNumeric(){
         <div class="item-main">
           <p class="item-name">${item.name}</p>
           <p class="item-req">必要量: ${fmt(required)}${item.unit}</p>
+          ${item.note ? `<p class="item-note">${item.note}</p>` : ''}
         </div>
         <div class="stamp ${stampClass}">${stampText}</div>
       </div>
@@ -635,6 +648,7 @@ function renderBool(){
         <div class="item-main">
           <p class="item-name">${item.name}</p>
           <p class="item-req">送れているか</p>
+          ${item.note ? `<p class="item-note">${item.note}</p>` : ''}
         </div>
         <div class="bool-toggle">
           <button class="bool-btn ${val==='ok'?'active-ok':''}" data-key="${item.key}" data-val="ok">済</button>
@@ -682,6 +696,7 @@ function renderWaste(){
 
   block.innerHTML = `
     <p class="item-name">${wasteItemName}</p>
+    ${wasteItemNote ? `<p class="item-note">${wasteItemNote}</p>` : ''}
     <div class="toggle-row" style="margin-bottom:${hasToday==='yes' ? '10px' : '0'};">
       <button class="toggle-btn ${hasToday==='yes'?'active':''}" id="wasteYes">ある日</button>
       <button class="toggle-btn ${hasToday==='no'?'active':''}" id="wasteNo">無い日</button>
