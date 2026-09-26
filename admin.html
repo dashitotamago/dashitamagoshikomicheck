@@ -188,6 +188,21 @@
   </header>
 
   <section>
+    <p class="section-title">天気の注意事項</p>
+    <p class="section-help">現場アプリで「晴れ」「雨」を選んだ直後に表示される注意事項です（任意）。</p>
+    <div class="ticket">
+      <div class="waste-field field">
+        <label for="sunnyNoteInput">晴れの日の注意事項</label>
+        <input type="text" id="sunnyNoteInput" value="" placeholder="例：特になし">
+      </div>
+      <div class="waste-field field">
+        <label for="rainNoteInput">雨の日の注意事項</label>
+        <input type="text" id="rainNoteInput" value="" placeholder="例：客数減の可能性あり、仕込み控えめに">
+      </div>
+    </div>
+  </section>
+
+  <section>
     <p class="section-title">仕込み量の項目</p>
     <p class="section-help">晴れの平日／晴れの土日祝／雨の平日／雨の土日祝、4つの条件ごとに必要量を設定します。</p>
     <div class="ticket" id="numericRows"></div>
@@ -240,7 +255,8 @@ const DEFAULT_CONFIG = {
     { key:'hacchu', name:'発注・掃除写真', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
     { key:'tenki',  name:'天気チェック', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
   ],
-  wasteItem: { name:'廃棄チェック', note:'' }
+  wasteItem: { name:'廃棄チェック', note:'' },
+  weatherNotes: { sunny:'', rain:'' }
 };
 
 // ここにGoogle Apps ScriptのウェブアプリURL（末尾が/execのURL）を貼り付けてください。
@@ -453,6 +469,14 @@ document.getElementById('wasteNameInput').addEventListener('input', e=>{
 document.getElementById('wasteNoteInput').addEventListener('input', e=>{
   config.wasteItem.note = e.target.value;
 });
+document.getElementById('sunnyNoteInput').addEventListener('input', e=>{
+  if(!config.weatherNotes) config.weatherNotes = { sunny:'', rain:'' };
+  config.weatherNotes.sunny = e.target.value;
+});
+document.getElementById('rainNoteInput').addEventListener('input', e=>{
+  if(!config.weatherNotes) config.weatherNotes = { sunny:'', rain:'' };
+  config.weatherNotes.rain = e.target.value;
+});
 
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
   const statusEl = document.getElementById('statusMsg');
@@ -485,14 +509,19 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   config = cloneDefault();
   document.getElementById('wasteNameInput').value = config.wasteItem.name;
   document.getElementById('wasteNoteInput').value = config.wasteItem.note || '';
+  document.getElementById('sunnyNoteInput').value = config.weatherNotes.sunny || '';
+  document.getElementById('rainNoteInput').value = config.weatherNotes.rain || '';
   renderNumeric();
   renderBool();
 });
 
 (async function init(){
   await loadConfig();
+  if(!config.weatherNotes) config.weatherNotes = { sunny:'', rain:'' };
   document.getElementById('wasteNameInput').value = config.wasteItem.name;
   document.getElementById('wasteNoteInput').value = config.wasteItem.note || '';
+  document.getElementById('sunnyNoteInput').value = config.weatherNotes.sunny || '';
+  document.getElementById('rainNoteInput').value = config.weatherNotes.rain || '';
   renderNumeric();
   renderBool();
 })();
