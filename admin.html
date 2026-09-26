@@ -202,11 +202,15 @@
   </section>
 
   <section>
-    <p class="section-title">廃棄チェック項目の名称</p>
+    <p class="section-title">廃棄チェック項目</p>
     <div class="ticket">
       <div class="waste-field field">
         <label for="wasteNameInput">表示名</label>
         <input type="text" id="wasteNameInput" value="廃棄チェック">
+      </div>
+      <div class="waste-field field">
+        <label for="wasteNoteInput">注意事項（現場に表示されます・任意）</label>
+        <input type="text" id="wasteNoteInput" value="" placeholder="例：分別を忘れずに">
       </div>
     </div>
   </section>
@@ -236,7 +240,7 @@ const DEFAULT_CONFIG = {
     { key:'hacchu', name:'発注・掃除写真', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
     { key:'tenki',  name:'天気チェック', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
   ],
-  wasteItem: { name:'廃棄チェック' }
+  wasteItem: { name:'廃棄チェック', note:'' }
 };
 
 // ここにGoogle Apps ScriptのウェブアプリURL（末尾が/execのURL）を貼り付けてください。
@@ -255,17 +259,17 @@ function cloneDefault(){
 
 function normalizeNumericItem(cfg){
   // 旧スキーマ(weekday/weekend/useRain/rainValue)からの移行に対応
-  if(cfg.sunnyWeekday !== undefined) return cfg;
+  if(cfg.sunnyWeekday !== undefined) return { note:'', ...cfg };
   const sw = cfg.weekday, se = cfg.weekend;
   const rw = cfg.useRain ? cfg.rainValue : cfg.weekday;
   const re = cfg.useRain ? cfg.rainValue : cfg.weekend;
-  return { key: cfg.key, name: cfg.name, unit: cfg.unit, sunnyWeekday: sw, sunnyWeekend: se, rainWeekday: rw, rainWeekend: re };
+  return { key: cfg.key, name: cfg.name, unit: cfg.unit, note: cfg.note || '', sunnyWeekday: sw, sunnyWeekend: se, rainWeekday: rw, rainWeekend: re };
 }
 
 function normalizeBoolItem(cfg){
   if(cfg.appliesSunnyWeekday !== undefined){
     return {
-      key: cfg.key, name: cfg.name,
+      key: cfg.key, name: cfg.name, note: cfg.note || '',
       appliesSunnyWeekday: cfg.appliesSunnyWeekday,
       appliesSunnyWeekend: cfg.appliesSunnyWeekend,
       appliesRainWeekday: cfg.appliesRainWeekday,
@@ -276,7 +280,7 @@ function normalizeBoolItem(cfg){
   const sunny = cfg.appliesSunny !== undefined ? cfg.appliesSunny : true;
   const rain = cfg.appliesRain !== undefined ? cfg.appliesRain : true;
   return {
-    key: cfg.key, name: cfg.name,
+    key: cfg.key, name: cfg.name, note: cfg.note || '',
     appliesSunnyWeekday: sunny, appliesSunnyWeekend: sunny,
     appliesRainWeekday: rain, appliesRainWeekend: rain
   };
@@ -341,6 +345,10 @@ function renderNumeric(){
             <input type="number" step="0.1" min="0" data-idx="${idx}" data-field="rainWeekend" value="${item.rainWeekend}">
           </div>
         </div>
+        <div class="field">
+          <label>注意事項（現場に表示されます・任意）</label>
+          <input type="text" data-idx="${idx}" data-field="note" value="${item.note || ''}" placeholder="例：冷蔵庫の奥から使う">
+        </div>
       </div>
       <div class="row-actions">
         <button class="delete-btn" data-idx="${idx}" data-action="delete-numeric">削除</button>
@@ -354,7 +362,7 @@ function renderNumeric(){
       const idx = parseInt(e.target.dataset.idx, 10);
       const field = e.target.dataset.field;
       const item = config.numericItems[idx];
-      if(field === 'name' || field === 'unit'){
+      if(field === 'name' || field === 'unit' || field === 'note'){
         item[field] = e.target.value;
       } else {
         item[field] = parseFloat(e.target.value) || 0;
@@ -393,6 +401,10 @@ function renderBool(){
         <label class="rain-line"><input type="checkbox" data-idx="${idx}" data-field="appliesRainWeekday" ${item.appliesRainWeekday ? 'checked' : ''}> 雨・平日</label>
         <label class="rain-line"><input type="checkbox" data-idx="${idx}" data-field="appliesRainWeekend" ${item.appliesRainWeekend ? 'checked' : ''}> 雨・土日祝</label>
       </div>
+      <div class="field">
+        <label>注意事項（現場に表示されます・任意）</label>
+        <input type="text" data-idx="${idx}" data-field="note" value="${item.note || ''}" placeholder="例：写真は明るい時間に撮る">
+      </div>
       <div class="row-actions">
         <button class="delete-btn" data-idx="${idx}" data-action="delete-bool">削除</button>
       </div>
@@ -400,10 +412,11 @@ function renderBool(){
     wrap.appendChild(row);
   });
 
-  wrap.querySelectorAll('input[data-field="name"]').forEach(input=>{
+  wrap.querySelectorAll('input[data-field="name"], input[data-field="note"]').forEach(input=>{
     input.addEventListener('input', e=>{
       const idx = parseInt(e.target.dataset.idx, 10);
-      config.boolItems[idx].name = e.target.value;
+      const field = e.target.dataset.field;
+      config.boolItems[idx][field] = e.target.value;
     });
   });
   wrap.querySelectorAll('input[data-field="appliesSunnyWeekday"], input[data-field="appliesSunnyWeekend"], input[data-field="appliesRainWeekday"], input[data-field="appliesRainWeekend"]').forEach(input=>{
@@ -424,18 +437,21 @@ function renderBool(){
 
 document.getElementById('addNumericBtn').addEventListener('click', ()=>{
   config.numericItems.push({
-    key: newKey('item'), name:'新しい項目', unit:'個', sunnyWeekday:0, sunnyWeekend:0, rainWeekday:0, rainWeekend:0
+    key: newKey('item'), name:'新しい項目', unit:'個', sunnyWeekday:0, sunnyWeekend:0, rainWeekday:0, rainWeekend:0, note:''
   });
   renderNumeric();
 });
 
 document.getElementById('addBoolBtn').addEventListener('click', ()=>{
-  config.boolItems.push({ key: newKey('bool'), name:'新しい確認事項', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true });
+  config.boolItems.push({ key: newKey('bool'), name:'新しい確認事項', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true, note:'' });
   renderBool();
 });
 
 document.getElementById('wasteNameInput').addEventListener('input', e=>{
   config.wasteItem.name = e.target.value;
+});
+document.getElementById('wasteNoteInput').addEventListener('input', e=>{
+  config.wasteItem.note = e.target.value;
 });
 
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
@@ -468,6 +484,7 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
   if(!confirm('すべての項目を初期状態に戻します。よろしいですか？')) return;
   config = cloneDefault();
   document.getElementById('wasteNameInput').value = config.wasteItem.name;
+  document.getElementById('wasteNoteInput').value = config.wasteItem.note || '';
   renderNumeric();
   renderBool();
 });
@@ -475,6 +492,7 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
 (async function init(){
   await loadConfig();
   document.getElementById('wasteNameInput').value = config.wasteItem.name;
+  document.getElementById('wasteNoteInput').value = config.wasteItem.note || '';
   renderNumeric();
   renderBool();
 })();
