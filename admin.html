@@ -216,20 +216,6 @@
     <button class="add-btn" id="addBoolBtn">＋ 確認事項を追加</button>
   </section>
 
-  <section>
-    <p class="section-title">廃棄チェック項目</p>
-    <div class="ticket">
-      <div class="waste-field field">
-        <label for="wasteNameInput">表示名</label>
-        <input type="text" id="wasteNameInput" value="廃棄チェック">
-      </div>
-      <div class="waste-field field">
-        <label for="wasteNoteInput">注意事項（現場に表示されます・任意）</label>
-        <input type="text" id="wasteNoteInput" value="" placeholder="例：分別を忘れずに">
-      </div>
-    </div>
-  </section>
-
   <div class="save-bar">
     <button class="save-btn" id="saveBtn">保存する</button>
     <button class="reset-btn" id="resetBtn">初期状態に戻す</button>
@@ -255,7 +241,6 @@ const DEFAULT_CONFIG = {
     { key:'hacchu', name:'発注・掃除写真', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
     { key:'tenki',  name:'天気チェック', appliesSunnyWeekday:true, appliesSunnyWeekend:true, appliesRainWeekday:true, appliesRainWeekend:true },
   ],
-  wasteItem: { name:'廃棄チェック', note:'' },
   weatherNotes: { sunny:'', rain:'' }
 };
 
@@ -463,12 +448,6 @@ document.getElementById('addBoolBtn').addEventListener('click', ()=>{
   renderBool();
 });
 
-document.getElementById('wasteNameInput').addEventListener('input', e=>{
-  config.wasteItem.name = e.target.value;
-});
-document.getElementById('wasteNoteInput').addEventListener('input', e=>{
-  config.wasteItem.note = e.target.value;
-});
 document.getElementById('sunnyNoteInput').addEventListener('input', e=>{
   if(!config.weatherNotes) config.weatherNotes = { sunny:'', rain:'' };
   config.weatherNotes.sunny = e.target.value;
@@ -507,8 +486,6 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
 document.getElementById('resetBtn').addEventListener('click', ()=>{
   if(!confirm('すべての項目を初期状態に戻します。よろしいですか？')) return;
   config = cloneDefault();
-  document.getElementById('wasteNameInput').value = config.wasteItem.name;
-  document.getElementById('wasteNoteInput').value = config.wasteItem.note || '';
   document.getElementById('sunnyNoteInput').value = config.weatherNotes.sunny || '';
   document.getElementById('rainNoteInput').value = config.weatherNotes.rain || '';
   renderNumeric();
@@ -518,8 +495,7 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
 (async function init(){
   await loadConfig();
   if(!config.weatherNotes) config.weatherNotes = { sunny:'', rain:'' };
-  document.getElementById('wasteNameInput').value = config.wasteItem.name;
-  document.getElementById('wasteNoteInput').value = config.wasteItem.note || '';
+  delete config.wasteItem; // 廃棄チェックは廃止。保存済み設定に残っていれば次回保存時に消える
   document.getElementById('sunnyNoteInput').value = config.weatherNotes.sunny || '';
   document.getElementById('rainNoteInput').value = config.weatherNotes.rain || '';
   renderNumeric();
